@@ -1,13 +1,13 @@
-#import "AudioplayersPlugin.h"
+#import "AudioPlayerPlugin.h"
 #import <UIKit/UIKit.h>
 #import <AVKit/AVKit.h>
 #import <AVFoundation/AVFoundation.h>
 
-static NSString *const CHANNEL_NAME = @"xyz.luan/audioplayers";
+static NSString *const CHANNEL_NAME = @"com.whaleread/audio_player_with_notification";
 
 static NSMutableDictionary * players;
 
-@interface AudioplayersPlugin()
+@interface AudioPlayerPlugin()
 -(void) pause: (NSString *) playerId;
 -(void) stop: (NSString *) playerId;
 -(void) seek: (NSString *) playerId time: (CMTime) time;
@@ -16,7 +16,7 @@ static NSMutableDictionary * players;
 -(void) onTimeInterval: (NSString *) playerId time: (CMTime) time;
 @end
 
-@implementation AudioplayersPlugin {
+@implementation AudioPlayerPlugin {
   FlutterResult _result;
 }
 
@@ -29,7 +29,7 @@ FlutterMethodChannel *_channel_audioplayer;
   FlutterMethodChannel* channel = [FlutterMethodChannel
                                    methodChannelWithName:CHANNEL_NAME
                                    binaryMessenger:[registrar messenger]];
-  AudioplayersPlugin* instance = [[AudioplayersPlugin alloc] init];
+  AudioPlayerPlugin* instance = [[AudioPlayerPlugin alloc] init];
   [registrar addMethodCallDelegate:instance channel:channel];
   _channel_audioplayer = channel;
 }
@@ -43,8 +43,7 @@ FlutterMethodChannel *_channel_audioplayer;
 }
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
-  NSString * playerId = call.arguments[@"playerId"];
-  NSLog(@"iOS => call %@, playerId %@", call.method, playerId);
+  NSLog(@"iOS => call %@", call.method);
 
   typedef void (^CaseBlock)();
 
@@ -86,11 +85,6 @@ FlutterMethodChannel *_channel_audioplayer;
                     NSLog(@"stop");
                     [self stop:playerId];
                   },
-                @"release":
-                    ^{
-                        NSLog(@"release");
-                        [self stop:playerId];
-                    },
                 @"seek":
                   ^{
                     NSLog(@"seek");
@@ -120,13 +114,6 @@ FlutterMethodChannel *_channel_audioplayer;
                     NSLog(@"setVolume");
                     float volume = (float)[call.arguments[@"volume"] doubleValue];
                     [self setVolume:volume playerId:playerId];
-                  },
-                @"setReleaseMode":
-                  ^{
-                    NSLog(@"setReleaseMode");
-                    NSString *releaseMode = call.arguments[@"releaseMode"];
-                    bool looping = [releaseMode hasSuffix:@"LOOP"];
-                    [self setLooping:looping playerId:playerId];
                   }
                 };
 

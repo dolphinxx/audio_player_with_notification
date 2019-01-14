@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingLeft="12dp"
+    android:paddingRight="12dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp"
+    >
+
+    <LinearLayout
+        android:id="@+id/left"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
+        android:layout_centerInParent="true"
+        android:orientation="vertical"
+        android:layout_toLeftOf="@id/play_btn"
+        android:layout_toStartOf="@id/play_btn"
+        >
+
+        <TextView
+            android:id="@+id/title"
+            style="@style/TextAppearance.Compat.Notification.Title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="青青子衿，悠悠我心。"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textSize="18sp"
+            android:layout_marginBottom="6dp"
+            />
+
+        <TextView
+            android:id="@+id/subtitle"
+            style="@style/TextAppearance.Compat.Notification"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="青青子衿，悠悠我心。"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textSize="16sp"
+            />
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/play_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@android:drawable/ic_media_play"
+        app:srcCompat="@android:drawable/ic_media_play"
+        android:background="#00000000"
+        android:layout_toLeftOf="@id/stop_btn"
+        android:layout_toStartOf="@id/stop_btn"
+        android:layout_centerInParent="true"
+        android:layout_marginLeft="12dp"
+        android:layout_marginRight="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginStart="12dp"
+        />
+
+    <ImageButton
+        android:id="@+id/stop_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_media_stop"
+        app:srcCompat="@drawable/ic_media_stop"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:layout_centerInParent="true"
+        android:background="#00000000"
+        />
+</RelativeLayout>

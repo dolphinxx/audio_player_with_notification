@@ -1,4 +1,4 @@
-package xyz.luan.audioplayers_example;
+package com.whaleread.audio_player_with_notification_example;
 
 import android.os.Bundle;
 

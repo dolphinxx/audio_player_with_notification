@@ -1,18 +1,26 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:audioplayers/audio_cache.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:audio_player_with_notification/audio_player.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'player_widget.dart';
-
 typedef void OnError(Exception exception);
 
-const kUrl1 = 'http://www.rxlabz.com/labz/audio.mp3';
-const kUrl2 = 'http://www.rxlabz.com/labz/audio2.mp3';
+const kUrl1 = 'http://222.216.30.118:8088/201411542.mp3';
+const kUrl2 = 'http://222.216.30.118:8088/201412637.mp3';
+const songs = [
+  {
+    "name": "一生所爱",
+    "album": "电影《大话西游》插曲",
+    "url": "http://222.216.30.118:8088/201411542.mp3",
+  }, {
+    "name": "倩女幽魂",
+    "album": "张国荣电影歌集",
+    "url": "http://222.216.30.118:8088/201412637.mp3",
+  }
+];
 
 void main() {
   runApp(new MaterialApp(home: new ExampleApp()));
@@ -24,9 +32,44 @@ class ExampleApp extends StatefulWidget {
 }
 
 class _ExampleAppState extends State<ExampleApp> {
-  AudioCache audioCache = new AudioCache();
-  AudioPlayer advancedPlayer = new AudioPlayer();
+  AudioPlayer player;
   String localFilePath;
+  AudioPlayerState state;
+  int songIndex = 0;
+  int duration;
+  int position;
+
+  @override
+  void initState() {
+    super.initState();
+    player = new AudioPlayer();
+    player.durationHandler = (d) => setState(() {duration = d;});
+    player.positionHandler = (p) => setState(() {
+      position = p;
+    });
+    player.errorHandler = (msg) {
+      print('audioPlayer error : $msg');
+      setState(() {
+        this.state = AudioPlayerState.STOPPED;
+        duration = 0;
+        position = 0;
+      });
+    };
+    player.audioPlayerStateChangeHandler = (AudioPlayerState state) {
+      if(state == AudioPlayerState.COMPLETED) {
+        state = AudioPlayerState.STOPPED;
+        position = duration;
+      }else if(state == AudioPlayerState.STOPPED) {
+        position = 0;
+      }
+      setState(() {
+        this.state = state;
+      });
+    };
+  }
+
+  String get positionText => position == null ? '00:00': renderTime(position);
+  String get durationText => duration == null ? '00:00': renderTime(duration);
 
   Future _loadFile() async {
     final bytes = await readBytes(kUrl1);
@@ -54,80 +97,144 @@ class _ExampleAppState extends State<ExampleApp> {
     );
   }
 
-  Widget _btn(String txt, VoidCallback onPressed) {
-    return ButtonTheme(
-        minWidth: 48.0,
-        child: RaisedButton(child: Text(txt), onPressed: onPressed));
-  }
-
-  Widget remoteUrl() {
-    return _tab([
-      Text('Sample 1 ($kUrl1)'),
-      PlayerWidget(url: kUrl1),
-      Text('Sample 2 ($kUrl2)'),
-      PlayerWidget(url: kUrl2),
-    ]);
-  }
-
   Widget localFile() {
     return _tab([
       Text('File: $kUrl1'),
-      _btn('Download File to your Device', () => _loadFile()),
+      RaisedButton(
+        onPressed: () => _loadFile(),
+        child: Text('Download File to your Device'),
+      ),
       Text('Current local file path: $localFilePath'),
-      localFilePath == null
-          ? Container()
-          : PlayerWidget(url: localFilePath, isLocal: true),
+//      localFilePath == null
+//          ? Container()
+//          : PlayerWidget(url: localFilePath, isLocal: true),
     ]);
   }
 
-  Widget localAsset() {
-    return _tab([
-      Text('Play Local Asset \'audio.mp3\':'),
-      _btn('Play', () => audioCache.play('audio.mp3')),
-      Text('Loop Local Asset \'audio.mp3\':'),
-      _btn('Loop', () => audioCache.loop('audio.mp3')),
-      Text('Play Local Asset \'audio2.mp3\':'),
-      _btn('Play', () => audioCache.play('audio2.mp3')),
-    ]);
+  Widget _progress() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: <Widget>[
+        new Text(
+          '${positionText}',
+          style: new TextStyle(fontSize: 24.0),
+        ),
+        Expanded(
+          child: Slider(
+            value: (position??0).toDouble(),
+            onChanged: (value) => player.seek(value.toInt()),
+            min: 0,
+            max: (duration??0).toDouble(),
+          ),
+        ),
+        new Text(
+          '${durationText}',
+          style: new TextStyle(fontSize: 24.0),
+        ),
+      ],
+    );
   }
 
-  Widget advanced() {
-    return _tab([
-      Column(children: [
-        Text('Source Url'),
-        Row(children: [
-          _btn('Audio 1', () => advancedPlayer.setUrl(kUrl1)),
-          _btn('Audio 2', () => advancedPlayer.setUrl(kUrl2)),
-        ], mainAxisAlignment: MainAxisAlignment.spaceEvenly),
-      ]),
-      Column(children: [
-        Text('Release Mode'),
-        Row(children: [
-          _btn('STOP', () => advancedPlayer.setReleaseMode(ReleaseMode.STOP)),
-          _btn('LOOP', () => advancedPlayer.setReleaseMode(ReleaseMode.LOOP)),
-          _btn('RELEASE',
-              () => advancedPlayer.setReleaseMode(ReleaseMode.RELEASE)),
-        ], mainAxisAlignment: MainAxisAlignment.spaceEvenly),
-      ]),
-      new Column(children: [
-        Text('Volume'),
-        Row(children: [
-          _btn('0.0', () => advancedPlayer.setVolume(0.0)),
-          _btn('0.5', () => advancedPlayer.setVolume(0.5)),
-          _btn('1.0', () => advancedPlayer.setVolume(1.0)),
-          _btn('2.0', () => advancedPlayer.setVolume(2.0)),
-        ], mainAxisAlignment: MainAxisAlignment.spaceEvenly),
-      ]),
-      new Column(children: [
-        Text('Control'),
-        Row(children: [
-          _btn('resume', () => advancedPlayer.resume()),
-          _btn('pause', () => advancedPlayer.pause()),
-          _btn('stop', () => advancedPlayer.stop()),
-          _btn('release', () => advancedPlayer.release()),
-        ], mainAxisAlignment: MainAxisAlignment.spaceEvenly),
-      ]),
-    ]);
+  Widget _controller() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        new Padding(
+          padding: new EdgeInsets.all(12.0),
+          child: new Stack(
+            children: [
+              new CircularProgressIndicator(
+                value: 1.0,
+                valueColor: new AlwaysStoppedAnimation(Colors.grey[300]),
+              ),
+              new CircularProgressIndicator(
+                value: position != null && position > 0
+                    ? position / duration
+                    : 0.0,
+                valueColor: new AlwaysStoppedAnimation(Colors.cyan),
+              ),
+            ],
+          ),
+        ),
+        new IconButton(
+            onPressed: () {
+              if(state == AudioPlayerState.PLAYING) {
+                player.pause();
+                return;
+              }
+              if(state == AudioPlayerState.PAUSED) {
+                player.resume();
+                return;
+              }
+              dynamic song = songs[songIndex];
+              _play(song);
+            },
+            iconSize: 64.0,
+            icon: new Icon(state == AudioPlayerState.PLAYING ? Icons.pause : Icons.play_arrow),
+            color: Colors.cyan,
+        ),
+        new IconButton(
+            onPressed: state == AudioPlayerState.PLAYING || state == AudioPlayerState.PAUSED ? () => player.stop() : null,
+            iconSize: 64.0,
+            icon: new Icon(Icons.stop),
+            color: Colors.cyan),
+      ],
+    );
+  }
+
+  void _play(dynamic song) {
+    player.play(song['url']);
+    player.updateNotification(title: song['name'], subtitle: song['album']);
+  }
+
+  void _setUrl(dynamic song) {
+    player.setUrl(song['url']);
+    player.updateNotification(title: song['name'], subtitle: song['album']);
+  }
+
+  Widget _list() {
+    List<Widget> items = List();
+    for(dynamic song in songs) {
+      items.add(ListTile(
+        onTap: () => _setUrl(song),
+        title: Text(song['name']),
+        subtitle: Text(song['album']),
+      ),);
+    }
+    return Column(
+      children: items,
+    );
+  }
+
+  Widget _volumeControllers() {
+    List<double> volumes = [0, 0.5, 1.0, 2.0];
+    List<Widget> items = List();
+    for(double volume in volumes) {
+      items.add(RaisedButton(
+        onPressed: () => player.setVolume(volume),
+        child: Text('$volume'),
+      ));
+    }
+    return Container(
+      child: Column(
+        children: <Widget>[
+          Container(
+            alignment: Alignment.centerLeft,
+            child: Text('Volume', style: Theme.of(context).textTheme.title,),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: items,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _status() {
+    return Container(
+      child: Text('Player Status: $state'),
+    );
   }
 
   @override
@@ -136,20 +243,27 @@ class _ExampleAppState extends State<ExampleApp> {
       length: 4,
       child: Scaffold(
         appBar: AppBar(
-          bottom: TabBar(
-            tabs: [
-              Tab(text: 'Remote Url'),
-              Tab(text: 'Local File'),
-              Tab(text: 'Local Asset'),
-              Tab(text: 'Advanced'),
-            ],
-          ),
-          title: Text('audioplayers Example'),
+          title: Text('audio player Example'),
         ),
-        body: TabBarView(
-          children: [remoteUrl(), localFile(), localAsset(), advanced()],
+        body: Column(
+          children: [
+            _progress(),
+            _status(),
+            _controller(),
+            _list(),
+            _volumeControllers(),
+          ],
         ),
       ),
     );
+  }
+
+  String renderTime(int time) {
+    time = time ~/ 1000;
+    int seconds = time % 60;
+    int minutes = time ~/ 60;
+    int hours = minutes ~/ 60;
+    minutes = minutes % 60;
+    return (hours > 0 ? ((hours < 10 ? '0':'') + '$hours:'):'') + ((minutes < 10 ? '0':'') + '$minutes:') + ((seconds < 10 ? '0':'') + '$seconds');
   }
 }
