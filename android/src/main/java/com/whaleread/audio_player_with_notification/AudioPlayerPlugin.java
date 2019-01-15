@@ -1,5 +1,8 @@
 package com.whaleread.audio_player_with_notification;
 
+import android.graphics.Color;
+import android.util.Log;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -128,10 +131,10 @@ public class AudioPlayerPlugin implements MethodCallHandler {
                 break;
             }
             case "updateNotificationTheme": {
-                Integer titleColor = call.argument("titleColor");
-                Integer subtitleColor = call.argument("subtitleColor");
-                Integer backgroundColor = call.argument("backgroundColor");
-                this.player.updateNotificationTheme(titleColor == null ? -1 : titleColor, subtitleColor == null ? -1 : subtitleColor, backgroundColor == null ? -1 : backgroundColor);
+                String titleColor = call.argument("titleColor");
+                String subtitleColor = call.argument("subtitleColor");
+                String backgroundColor = call.argument("backgroundColor");
+                this.player.updateNotificationTheme(titleColor, subtitleColor, backgroundColor);
                 break;
             }
             default: {

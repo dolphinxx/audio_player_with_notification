@@ -128,7 +128,7 @@ public class MediaPlayerDelegate {
      * @param subtitleColor notification subtitle color
      * @param backgroundColor notification background color
      */
-    public void updateNotificationTheme(int titleColor, int subtitleColor, int backgroundColor) {
+    public void updateNotificationTheme(String titleColor, String subtitleColor, String backgroundColor) {
         Intent intent = new Intent();
         intent.setAction(MediaPlayerService.BROADCAST_TO_SERVICE);
         intent.putExtra(MediaPlayerService.PLAYER_FUNCTION_TYPE, MediaPlayerService.UPDATE_NOTIFICATION_THEME);

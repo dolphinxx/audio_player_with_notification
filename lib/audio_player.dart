@@ -107,6 +107,11 @@ class AudioPlayer {
         'updateNotification', {'title': title, 'subtitle': subtitle});
   }
 
+  Future<int> updateNotificationTheme({String titleColor, String subtitleColor, String backgroundColor}) {
+    return _invokeMethod(
+        'updateNotificationTheme', {'titleColor': titleColor, 'subtitleColor': subtitleColor, 'backgroundColor': backgroundColor});
+  }
+
   /// Changes the url (source), without resuming playback (like play would do).
   ///
   /// This will keep the resource prepared (on Android) for when resume is called.

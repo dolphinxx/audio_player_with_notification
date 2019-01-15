@@ -8,6 +8,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
@@ -147,18 +148,18 @@ public class MediaPlayerService extends Service implements Runnable {
         notificationManager.notify(notificationId, notificationCompatBuilder.build());
     }
 
-    private void updateNotificationTheme(int titleColor, int subtitleColor, int backgroundColor) {
+    private void updateNotificationTheme(String titleColor, String subtitleColor, String backgroundColor) {
         if (enableLogging) {
             Log.i(LOGGING_LABEL, "update notification theme with titleColor[" + titleColor + "], subtitleColor[" + subtitleColor + "], backgroundColor[" + backgroundColor + "]");
         }
-        if (titleColor != -1) {
-            remoteView.setTextColor(R.id.title, titleColor);
+        if (titleColor != null) {
+            remoteView.setTextColor(R.id.title, Color.parseColor(titleColor));
         }
-        if (subtitleColor != -1) {
-            remoteView.setTextColor(R.id.subtitle, subtitleColor);
+        if (subtitleColor != null) {
+            remoteView.setTextColor(R.id.subtitle, Color.parseColor(subtitleColor));
         }
-        if (backgroundColor != -1) {
-            remoteView.setInt(R.id.container, "setBackgroundColor", backgroundColor);
+        if (backgroundColor != null) {
+            remoteView.setInt(R.id.container, "setBackgroundColor", Color.parseColor(backgroundColor));
         }
         notificationManager.notify(notificationId, notificationCompatBuilder.build());
     }
@@ -291,7 +292,7 @@ public class MediaPlayerService extends Service implements Runnable {
                         updateNotification(intent.getStringExtra(NOTIFICATION_TITLE_KEY), intent.getStringExtra(NOTIFICATION_SUBTITLE_KEY));
                         break;
                     case UPDATE_NOTIFICATION_THEME:
-                        updateNotificationTheme(intent.getIntExtra(NOTIFICATION_TITLE_COLOR_KEY, -1), intent.getIntExtra(NOTIFICATION_SUBTITLE_COLOR_KEY, -1), intent.getIntExtra(NOTIFICATION_BACKGROUND_COLOR_KEY, -1));
+                        updateNotificationTheme(intent.getStringExtra(NOTIFICATION_TITLE_COLOR_KEY), intent.getStringExtra(NOTIFICATION_SUBTITLE_COLOR_KEY), intent.getStringExtra(NOTIFICATION_BACKGROUND_COLOR_KEY));
                         break;
                     case UPDATE_OPTIONS:
                         if (intent.hasExtra(POSITION_NOTIFY_INTERVAL_KEY)) {

@@ -238,6 +238,34 @@ class _ExampleAppState extends State<ExampleApp> {
     );
   }
 
+  Widget _notificationTheme() {
+    List themes = [
+      {
+        'label': 'dark',
+        'titleColor': 'white',
+        'subtitleColor': 'white',
+        'backgroundColor': 'black',
+      },
+      {
+        'label': 'light',
+        'titleColor': 'black',
+        'subtitleColor': 'black',
+        'backgroundColor': '#f1f1f1',
+      },
+    ];
+    List<Widget> items = List();
+    for(dynamic theme in themes) {
+      items.add(RaisedButton(
+        onPressed: () => player.updateNotificationTheme(titleColor: theme['titleColor'], subtitleColor: theme['subtitleColor'], backgroundColor: theme['backgroundColor']),
+        child: Text(theme['label'],),
+      ));
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: items,
+    );
+  }
+
   Widget _status() {
     return Container(
       child: Text('Player Status: $state'),
@@ -258,6 +286,7 @@ class _ExampleAppState extends State<ExampleApp> {
             _status(),
             _controller(),
             _list(),
+            _notificationTheme(),
             _volumeControllers(),
           ],
         ),
