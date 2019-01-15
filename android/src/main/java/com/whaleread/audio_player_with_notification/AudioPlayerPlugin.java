@@ -77,6 +77,16 @@ public class AudioPlayerPlugin implements MethodCallHandler {
 
     private void handleMethodCall(final MethodCall call, final MethodChannel.Result response) {
         switch (call.method) {
+            case "init": {
+                Boolean audioFocus = call.argument("audioFocus");
+                Integer positionNotifyInterval = call.argument("positionNotifyInterval");
+                player.createPlayer(audioFocus, positionNotifyInterval);
+                break;
+            }
+            case "dispose": {
+                player.destroyPlayer();
+                break;
+            }
             case "play": {
                 final String url = call.argument("url");
                 Double volume = call.argument("volume");

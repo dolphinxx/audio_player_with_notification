@@ -43,6 +43,7 @@ class _ExampleAppState extends State<ExampleApp> {
   void initState() {
     super.initState();
     player = new AudioPlayer();
+    player.init();
     player.durationHandler = (d) => setState(() {duration = d;});
     player.positionHandler = (p) => setState(() {
       position = p;
@@ -66,6 +67,12 @@ class _ExampleAppState extends State<ExampleApp> {
         this.state = state;
       });
     };
+  }
+
+  @override
+  void dispose(){
+    player.dispose();
+    super.dispose();
   }
 
   String get positionText => position == null ? '00:00': renderTime(position);

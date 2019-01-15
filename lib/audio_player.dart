@@ -58,6 +58,14 @@ class AudioPlayer {
         .then((result) => (result as int));
   }
 
+  Future<int> init({bool audioFocus, int positionNotifyInterval}) async {
+    return await _invokeMethod('init', {'audioFocus': audioFocus, 'positionNotifyInterval': positionNotifyInterval});
+  }
+
+  Future<int> dispose() async {
+    return await _invokeMethod('dispose');
+  }
+
   /// Play audio. Url can be a remote url (isLocal = false) or a local file system path (isLocal = true).
   Future<int> play(String url,
       {bool isLocal: false, double volume: -1, int position: 0}) async {

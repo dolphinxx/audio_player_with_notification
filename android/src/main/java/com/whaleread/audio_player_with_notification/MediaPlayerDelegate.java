@@ -9,6 +9,7 @@ import android.support.annotation.Nullable;
 public class MediaPlayerDelegate {
     private Context context;
     private MediaPlayerListener listener;
+    private boolean initialized = false;
 
     private int currentPlayerStatus = MediaPlayerService.PLAYER_STATUS_INITIAL;
 
@@ -17,21 +18,39 @@ public class MediaPlayerDelegate {
      */
     public MediaPlayerDelegate(Context context) {
         this.context = context;
+    }
+
+    public void createPlayer(Boolean audioFocus, Integer positionNotifyInterval) {
+        if(initialized) {
+            return;
+        }
         Intent intent = new Intent(context, MediaPlayerService.class);
+        if(audioFocus != null) {
+            intent.putExtra(MediaPlayerService.AUDIO_FOCUS_KEY, audioFocus);
+        }
+        if(positionNotifyInterval != null) {
+            intent.putExtra(MediaPlayerService.POSITION_NOTIFY_INTERVAL_KEY, positionNotifyInterval);
+        }
         context.startService(intent);
         context.registerReceiver(receiverFromService, new IntentFilter(MediaPlayerService.SERVICE_TO_BROADCAST));
+        initialized = true;
+    }
+
+    public void destroyPlayer() {
+        if(initialized) {
+            context.unregisterReceiver(receiverFromService);
+            context.stopService(new Intent(context, MediaPlayerService.class));
+        }
     }
 
     public void setListener(MediaPlayerListener listener) {
         this.listener = listener;
     }
 
-    public void destroy() {
-        context.unregisterReceiver(receiverFromService);
-//        context.stopService(new Intent(context, MediaPlayerService.class));
-    }
-
     public void play(@Nullable String url, float volume, int position) {
+        if(!initialized) {
+            createPlayer(null, null);
+        }
         if (currentPlayerStatus != MediaPlayerService.PLAYER_STATUS_PLAYING && currentPlayerStatus != MediaPlayerService.PLAYER_STATUS_PAUSED) {
             startMediaPlayer(url, volume, position);
             return;

@@ -103,7 +103,7 @@ public class MediaPlayerService extends Service implements Runnable {
         remoteView.setOnClickPendingIntent(R.id.play_btn, pendingPlayIntent);
 
 
-        String channelId = "MediaPlayerChannel";
+        String channelId = "com.whaleread/audio_player_with_notification";
         notificationCompatBuilder =
                 new NotificationCompat.Builder(this.getApplicationContext(), channelId);
 
@@ -171,6 +171,12 @@ public class MediaPlayerService extends Service implements Runnable {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent.hasExtra(POSITION_NOTIFY_INTERVAL_KEY)) {
+            this.positionNotifyInterval = intent.getLongExtra(POSITION_NOTIFY_INTERVAL_KEY, 200);
+        }
+        if (intent.hasExtra(AUDIO_FOCUS_KEY)) {
+            this.audioFocus = intent.getBooleanExtra(AUDIO_FOCUS_KEY, true);
+        }
         if (audioManager == null) {
             IntentFilter intentFilter = new IntentFilter(BROADCAST_TO_SERVICE);
             registerReceiver(playerReceiver, intentFilter);
