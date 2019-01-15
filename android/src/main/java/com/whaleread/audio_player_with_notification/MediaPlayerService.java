@@ -30,6 +30,7 @@ public class MediaPlayerService extends Service implements Runnable {
     public static final String SERVICE_TO_BROADCAST = MediaPlayerService.class.getPackage().getName() + ".serviceToBroadcast";
     public static final String POSITION_NOTIFY_INTERVAL_KEY = "positionNotifyInterval";
     public static final String AUDIO_FOCUS_KEY = "audioFocus";
+    public static final String ENABLE_LOGGING_KEY = "enableLogging";
     public static final String ACTION_TYPE_KEY = "actionType";
     public static final int ACTION_TYPE_STATUS = 1;
     public static final int ACTION_TYPE_DURATION = 2;
@@ -77,7 +78,7 @@ public class MediaPlayerService extends Service implements Runnable {
     private long positionNotifyInterval = 200;
     private int status = PLAYER_STATUS_INITIAL;
     private boolean audioFocus = true;
-    private boolean enableLogging = true;
+    private boolean enableLogging = false;
     private AudioManager.OnAudioFocusChangeListener onAudioFocusChangeListener;
 
     private int notificationId = 1;
@@ -177,6 +178,9 @@ public class MediaPlayerService extends Service implements Runnable {
         }
         if (intent.hasExtra(AUDIO_FOCUS_KEY)) {
             this.audioFocus = intent.getBooleanExtra(AUDIO_FOCUS_KEY, true);
+        }
+        if (intent.hasExtra(ENABLE_LOGGING_KEY)) {
+            this.enableLogging = intent.getBooleanExtra(ENABLE_LOGGING_KEY, false);
         }
         if (audioManager == null) {
             IntentFilter intentFilter = new IntentFilter(BROADCAST_TO_SERVICE);

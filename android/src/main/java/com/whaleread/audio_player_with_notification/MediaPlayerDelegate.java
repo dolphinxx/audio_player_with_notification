@@ -20,7 +20,7 @@ public class MediaPlayerDelegate {
         this.context = context;
     }
 
-    public void createPlayer(Boolean audioFocus, Integer positionNotifyInterval) {
+    public void createPlayer(Boolean audioFocus, Integer positionNotifyInterval, Boolean enableLogging) {
         if(initialized) {
             return;
         }
@@ -30,6 +30,9 @@ public class MediaPlayerDelegate {
         }
         if(positionNotifyInterval != null) {
             intent.putExtra(MediaPlayerService.POSITION_NOTIFY_INTERVAL_KEY, positionNotifyInterval);
+        }
+        if(enableLogging != null) {
+            intent.putExtra(MediaPlayerService.ENABLE_LOGGING_KEY, enableLogging);
         }
         context.startService(intent);
         context.registerReceiver(receiverFromService, new IntentFilter(MediaPlayerService.SERVICE_TO_BROADCAST));
@@ -49,7 +52,7 @@ public class MediaPlayerDelegate {
 
     public void play(@Nullable String url, float volume, int position) {
         if(!initialized) {
-            createPlayer(null, null);
+            createPlayer(null, null, null);
         }
         if (currentPlayerStatus != MediaPlayerService.PLAYER_STATUS_PLAYING && currentPlayerStatus != MediaPlayerService.PLAYER_STATUS_PAUSED) {
             startMediaPlayer(url, volume, position);
