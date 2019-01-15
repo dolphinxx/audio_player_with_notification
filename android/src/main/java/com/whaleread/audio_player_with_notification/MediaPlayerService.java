@@ -405,8 +405,9 @@ public class MediaPlayerService extends Service implements Runnable {
                 audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (int) (volume * audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)), 0);
             } catch (Exception ignore) {
             }
+        } else {
+            this.volume = volume;
         }
-        this.volume = volume;
     }
 
     private void seekTo(int position) {
@@ -446,6 +447,7 @@ public class MediaPlayerService extends Service implements Runnable {
                     audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (int) (volume * audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)), 0);
                 } catch (Exception ignore) {
                 }
+                volume = -1;
             }
         }
         try {
