@@ -5,11 +5,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.support.annotation.Nullable;
+import android.util.Log;
 
 public class MediaPlayerDelegate {
     private Context context;
     private MediaPlayerListener listener;
     private boolean initialized = false;
+    private boolean enableLogging = false;
+    private static final String LOGGING_LABEL = "AudioPlayer";
 
     private int currentPlayerStatus = MediaPlayerService.PLAYER_STATUS_INITIAL;
 
@@ -32,7 +35,11 @@ public class MediaPlayerDelegate {
             intent.putExtra(MediaPlayerService.POSITION_NOTIFY_INTERVAL_KEY, positionNotifyInterval);
         }
         if(enableLogging != null) {
+            this.enableLogging = enableLogging;
             intent.putExtra(MediaPlayerService.ENABLE_LOGGING_KEY, enableLogging);
+        }
+        if(this.enableLogging) {
+            Log.i(LOGGING_LABEL, "createPlayer");
         }
         context.startService(intent);
         context.registerReceiver(receiverFromService, new IntentFilter(MediaPlayerService.SERVICE_TO_BROADCAST));
@@ -43,6 +50,11 @@ public class MediaPlayerDelegate {
         if(initialized) {
             context.unregisterReceiver(receiverFromService);
             context.stopService(new Intent(context, MediaPlayerService.class));
+            this.initialized = false;
+            this.currentPlayerStatus = MediaPlayerService.PLAYER_STATUS_INITIAL;
+            if(this.enableLogging) {
+                Log.i(LOGGING_LABEL, "destroyPlayer");
+            }
         }
     }
 
