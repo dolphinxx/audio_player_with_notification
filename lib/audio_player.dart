@@ -126,7 +126,7 @@ class AudioPlayer {
   }
 
   Future<void> _platformCallHandler(MethodCall call) async {
-    _log('_platformCallHandler call ${call.method} ${call.arguments}');
+//    _log('_platformCallHandler call ${call.method} ${call.arguments}');
     dynamic value = call.arguments;
     switch (call.method) {
       case 'onPlay':
