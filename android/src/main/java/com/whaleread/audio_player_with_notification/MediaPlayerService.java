@@ -104,7 +104,6 @@ public class MediaPlayerService extends Service implements Runnable {
         PendingIntent pendingPlayIntent = PendingIntent.getBroadcast(this, 1, playIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         remoteView.setOnClickPendingIntent(R.id.play_btn, pendingPlayIntent);
 
-
         String channelId = "com.whaleread/audio_player_with_notification";
         notificationCompatBuilder =
                 new NotificationCompat.Builder(this.getApplicationContext(), channelId);
@@ -254,6 +253,9 @@ public class MediaPlayerService extends Service implements Runnable {
         super.onDestroy();
         unregisterReceiver(playerReceiver);
         if (player != null) {
+            if(player.isPlaying()) {
+                player.stop();
+            }
             player.release();
             player = null;
         }
@@ -394,6 +396,7 @@ public class MediaPlayerService extends Service implements Runnable {
             player = null;
             stopPositionUpdate();
         }
+        prepared = false;
     }
 
     private void setVolume(float volume) {
