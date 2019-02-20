@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:convert';
+import 'package:convert/convert.dart';
+import 'package:crypto/crypto.dart' as crypto;
 
 import 'package:audio_player_with_notification/audio_player.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +22,10 @@ const songs = [
     "name": "倩女幽魂",
     "album": "张国荣电影歌集",
     "url": "http://222.216.30.118:8088/201412637.mp3",
+  }, {
+    "name": "倩女幽魂",
+    "album": "张国荣电影歌集",
+    "url": "http://audio.xmcdn.com/group10/M06/55/42/wKgDaVci_qzSZ7VEAFmBiJoJ1sA169.m4a",
   }
 ];
 
@@ -78,17 +85,18 @@ class _ExampleAppState extends State<ExampleApp> {
   String get positionText => position == null ? '00:00': renderTime(position);
   String get durationText => duration == null ? '00:00': renderTime(duration);
 
-  Future _loadFile() async {
-    final bytes = await readBytes(kUrl1);
-    final dir = await getApplicationDocumentsDirectory();
-    final file = new File('${dir.path}/audio.mp3');
-
-    await file.writeAsBytes(bytes);
-    if (await file.exists()) {
-      setState(() {
-        localFilePath = file.path;
-      });
+  Future<String> _loadFile(String url) async {
+    String name = hex.encode(crypto.md5.convert(utf8.encode(url)).bytes);
+    Directory dir = await getTemporaryDirectory();
+    String path = '${dir.path}/audio_cache/$name';
+    File file = File(path);
+    if(await file.exists()) {
+      return path;
     }
+    await file.create(recursive: true);
+    final bytes = await readBytes(url);
+    await file.writeAsBytes(bytes);
+    return path;
   }
 
   Widget _tab(List<Widget> children) {
@@ -102,20 +110,6 @@ class _ExampleAppState extends State<ExampleApp> {
         ),
       ),
     );
-  }
-
-  Widget localFile() {
-    return _tab([
-      Text('File: $kUrl1'),
-      RaisedButton(
-        onPressed: () => _loadFile(),
-        child: Text('Download File to your Device'),
-      ),
-      Text('Current local file path: $localFilePath'),
-//      localFilePath == null
-//          ? Container()
-//          : PlayerWidget(url: localFilePath, isLocal: true),
-    ]);
   }
 
   Widget _progress() {
@@ -189,13 +183,15 @@ class _ExampleAppState extends State<ExampleApp> {
     );
   }
 
-  void _play(dynamic song) {
-    player.play(song['url']);
+  void _play(dynamic song) async {
+    String path = await _loadFile(song['url']);
+    player.play(path);
     player.updateNotification(title: song['name'], subtitle: song['album']);
   }
 
-  void _setUrl(dynamic song) {
-    player.setUrl(song['url']);
+  void _setUrl(dynamic song) async {
+    String path = await _loadFile(song['url']);
+    player.setUrl(path);
     player.updateNotification(title: song['name'], subtitle: song['album']);
   }
 
