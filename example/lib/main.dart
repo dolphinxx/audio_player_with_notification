@@ -99,6 +99,11 @@ class _ExampleAppState extends State<ExampleApp> {
     return path;
   }
 
+  Future<void> _cleanCachedFiles() async {
+    Directory dir = await getTemporaryDirectory();
+    await Directory('${dir.path}/audio_cache').delete(recursive: true);
+  }
+
   Widget _tab(List<Widget> children) {
     return Center(
       child: Container(
@@ -282,6 +287,12 @@ class _ExampleAppState extends State<ExampleApp> {
             _status(),
             _controller(),
             _list(),
+            Container(
+              child: RaisedButton(
+                  onPressed: _cleanCachedFiles,
+                child: Text('Clear Cache'),
+              ),
+            ),
             _notificationTheme(),
             _volumeControllers(),
           ],
