@@ -106,6 +106,9 @@ public class MediaPlayerService extends Service implements Runnable {
         PendingIntent pendingPlayIntent = PendingIntent.getBroadcast(this, 1, playIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         remoteView.setOnClickPendingIntent(R.id.play_btn, pendingPlayIntent);
 
+        Intent contentIntent = new Intent(this, getMainActivityClass(this));
+        PendingIntent pendingContentIntent = PendingIntent.getActivity(this, 2, contentIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
         String channelId = "com.whaleread/audio_player_with_notification";
         notificationCompatBuilder =
                 new NotificationCompat.Builder(this.getApplicationContext(), channelId);
@@ -117,6 +120,7 @@ public class MediaPlayerService extends Service implements Runnable {
                 // Title for API < 16 devices.
                 .setCustomContentView(remoteView)
                 .setContent(remoteView)
+                .setContentIntent(pendingContentIntent)
                 .setSmallIcon(android.R.drawable.ic_media_play)
 //                .setDefaults(Notification.DEFAULT_LIGHTS | Notification.DEFAULT_VIBRATE)
                 .setOngoing(true)
@@ -570,6 +574,18 @@ public class MediaPlayerService extends Service implements Runnable {
             handler.postDelayed(this, positionNotifyInterval);
         } else {
             stopPositionUpdate();
+        }
+    }
+
+    private static Class getMainActivityClass(Context context) {
+        String packageName = context.getPackageName();
+        Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(packageName);
+        String className = launchIntent.getComponent().getClassName();
+        try {
+            return Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }
