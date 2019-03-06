@@ -42,8 +42,8 @@ class _ExampleAppState extends State<ExampleApp> {
   String localFilePath;
   AudioPlayerState state;
   int songIndex = 0;
-  int duration;
-  int position;
+  int duration = 0;
+  int position = 0;
   int buffer = 0;
 
   @override
