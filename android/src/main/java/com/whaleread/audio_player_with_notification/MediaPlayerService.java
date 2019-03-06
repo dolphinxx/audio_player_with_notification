@@ -35,6 +35,7 @@ public class MediaPlayerService extends Service implements Runnable {
     public static final int ACTION_TYPE_STATUS = 1;
     public static final int ACTION_TYPE_DURATION = 2;
     public static final int ACTION_TYPE_POSITION = 3;
+    public static final int ACTION_TYPE_BUFFER = 4;
     public static final String PLAYER_FUNCTION_TYPE = "playerFunctionType";
     public static final String PLAYER_TRACK_URL = "trackURL";
     public static final String PLAYER_VOLUME = "volume";
@@ -53,6 +54,7 @@ public class MediaPlayerService extends Service implements Runnable {
     public static final String PLAYER_STATUS_KEY = "playerCurrentStatus";
     public static final String PLAYER_DURATION_KEY = "playerDuration";
     public static final String PLAYER_POSITION_KEY = "playerCurrentPosition";
+    public static final String PLAYER_BUFFER_KEY = "playerCurrentBuffer";
     public static final int PLAYER_STATUS_INITIAL = -1;
     public static final int PLAYER_STATUS_STOPPED = 0;
     public static final int PLAYER_STATUS_PLAYING = 1;
@@ -471,12 +473,13 @@ public class MediaPlayerService extends Service implements Runnable {
                 _stopPlayer();
                 return false;
             });
-//            player.setOnBufferingUpdateListener(new MediaPlayer.OnBufferingUpdateListener() {
-//
-//                public void onBufferingUpdate(MediaPlayer mp, int percent) {
-//                    Log.e("onBufferingUpdate", "" + percent);
-//                }
-//            });
+            player.setOnBufferingUpdateListener((mp, percent) -> {
+                Intent intent = new Intent();
+                intent.setAction(SERVICE_TO_BROADCAST);
+                intent.putExtra(ACTION_TYPE_KEY, ACTION_TYPE_BUFFER);
+                intent.putExtra(PLAYER_BUFFER_KEY, percent);
+                sendBroadcast(intent);
+            });
             player.prepareAsync();
             player.setOnPreparedListener(mp -> {
                 if (audioFocus) {

@@ -14,4 +14,6 @@ public interface MediaPlayerListener {
     void onDuration(int duration);
 
     void onPosition(int position);
+
+    void onBuffer(int percent);
 }

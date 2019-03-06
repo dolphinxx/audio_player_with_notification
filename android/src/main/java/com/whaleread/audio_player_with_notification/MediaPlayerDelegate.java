@@ -227,6 +227,12 @@ public class MediaPlayerDelegate {
         }
     }
 
+    private void onServiceBuffer(int percent) {
+        if (listener != null) {
+            listener.onBuffer(percent);
+        }
+    }
+
     private BroadcastReceiver receiverFromService = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -256,6 +262,8 @@ public class MediaPlayerDelegate {
                     onServiceDuration(intent.getIntExtra(MediaPlayerService.PLAYER_DURATION_KEY, 0));
                 } else if (actionType == MediaPlayerService.ACTION_TYPE_POSITION) {
                     onServicePosition(intent.getIntExtra(MediaPlayerService.PLAYER_POSITION_KEY, 0));
+                } else if (actionType == MediaPlayerService.ACTION_TYPE_BUFFER) {
+                    onServiceBuffer(intent.getIntExtra(MediaPlayerService.PLAYER_BUFFER_KEY, 0));
                 }
             }
         }

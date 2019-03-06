@@ -39,6 +39,9 @@ class AudioPlayer {
   /// This handler updates the current position of the audio. You can use it to make a progress bar, for instance.
   TimeChangeHandler positionHandler;
 
+  /// This handler updates the current buffer percent of the audio. You can use it to make a progress bar, for instance.
+  TimeChangeHandler bufferHandler;
+
   AudioPlayerStateChangeHandler audioPlayerStateChangeHandler;
 
   /// This is called when an unexpected error is thrown in the native code.
@@ -146,6 +149,11 @@ class AudioPlayer {
       case 'onPosition':
         if (positionHandler != null) {
           positionHandler(value);
+        }
+        break;
+      case 'onBuffer':
+        if (bufferHandler != null) {
+          bufferHandler(value);
         }
         break;
       case 'onComplete':

@@ -9,22 +9,21 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:path_provider/path_provider.dart';
 
-typedef void OnError(Exception exception);
+import 'player_slider.dart';
 
-const kUrl1 = 'http://222.216.30.118:8088/201411542.mp3';
-const kUrl2 = 'http://222.216.30.118:8088/201412637.mp3';
 const songs = [
   {
     "name": "一生所爱",
     "album": "电影《大话西游》插曲",
     "url": "http://222.216.30.118:8088/201411542.mp3",
+    "cache": true,
   }, {
-    "name": "倩女幽魂",
-    "album": "张国荣电影歌集",
-    "url": "http://222.216.30.118:8088/201412637.mp3",
+    "name": "一生所爱",
+    "album": "陶笛欣赏",
+    "url": "http://fdfs.xmcdn.com/group13/M02/2B/2D/wKgDXlbxyF-hoIndABgWtE0tsmw788.mp3",
   }, {
-    "name": "倩女幽魂",
-    "album": "张国荣电影歌集",
+    "name": "2048章",
+    "album": "仙逆",
     "url": "http://audio.xmcdn.com/group10/M06/55/42/wKgDaVci_qzSZ7VEAFmBiJoJ1sA169.m4a",
   }
 ];
@@ -45,6 +44,7 @@ class _ExampleAppState extends State<ExampleApp> {
   int songIndex = 0;
   int duration;
   int position;
+  int buffer = 0;
 
   @override
   void initState() {
@@ -55,6 +55,7 @@ class _ExampleAppState extends State<ExampleApp> {
     player.positionHandler = (p) => setState(() {
       position = p;
     });
+    player.bufferHandler = (p) => setState(() {buffer = p;});
     player.errorHandler = (msg) {
       print('audioPlayer error : $msg');
       setState(() {
@@ -84,6 +85,14 @@ class _ExampleAppState extends State<ExampleApp> {
 
   String get positionText => position == null ? '00:00': renderTime(position);
   String get durationText => duration == null ? '00:00': renderTime(duration);
+
+  void _reset() {
+    setState(() {
+      duration = 0;
+      position = 0;
+      buffer = 0;
+    });
+  }
 
   Future<String> _loadFile(String url) async {
     String name = hex.encode(crypto.md5.convert(utf8.encode(url)).bytes);
@@ -154,7 +163,7 @@ class _ExampleAppState extends State<ExampleApp> {
                 valueColor: new AlwaysStoppedAnimation(Colors.grey[300]),
               ),
               new CircularProgressIndicator(
-                value: position != null && position > 0
+                value: duration > 0 && position != null && position > 0
                     ? position / duration
                     : 0.0,
                 valueColor: new AlwaysStoppedAnimation(Colors.cyan),
@@ -189,15 +198,17 @@ class _ExampleAppState extends State<ExampleApp> {
   }
 
   void _play(dynamic song) async {
-    String path = await _loadFile(song['url']);
-    player.play(path);
+    String url = song['cache'] == true ? await _loadFile(song['url']) : song['url'];
+    player.play(url);
     player.updateNotification(title: song['name'], subtitle: song['album']);
+    _reset();
   }
 
   void _setUrl(dynamic song) async {
-    String path = await _loadFile(song['url']);
-    player.setUrl(path);
+    String url = song['cache'] == true ? await _loadFile(song['url']) : song['url'];
+    player.setUrl(url);
     player.updateNotification(title: song['name'], subtitle: song['album']);
+    _reset();
   }
 
   Widget _list() {
@@ -283,6 +294,16 @@ class _ExampleAppState extends State<ExampleApp> {
         ),
         body: Column(
           children: [
+            Container(
+              margin: EdgeInsets.all(20),
+              child: PlayerSlider(
+                bufferPercent: buffer/100,
+                playPercent: position == null || duration == 0 ? 0 : position /duration,
+                onChange: (value) {
+                  player.seek((value * duration).toInt());
+                },
+              ),
+            ),
             _progress(),
             _status(),
             _controller(),

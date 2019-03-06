@@ -65,6 +65,11 @@ public class AudioPlayerPlugin implements MethodCallHandler {
             public void onPosition(int position) {
                 channel.invokeMethod("onPosition", position);
             }
+
+            @Override
+            public void onBuffer(int percent) {
+                channel.invokeMethod("onBuffer", percent);
+            }
         });
     }
 
