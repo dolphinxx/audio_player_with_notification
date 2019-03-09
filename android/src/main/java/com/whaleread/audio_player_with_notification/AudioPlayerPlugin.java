@@ -1,8 +1,5 @@
 package com.whaleread.audio_player_with_notification;
 
-import android.graphics.Color;
-import android.util.Log;
-
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -100,7 +97,8 @@ public class AudioPlayerPlugin implements MethodCallHandler {
                 final String url = call.argument("url");
                 Double volume = call.argument("volume");
                 Integer position = call.argument("position");
-                player.play(url, volume == null ? -1 : volume.floatValue(), position == null ? -1 : position);
+                String headers = call.argument("headers");
+                player.play(url, volume == null ? -1 : volume.floatValue(), position == null ? -1 : position, headers);
                 break;
             }
             case "resume": {
@@ -127,7 +125,8 @@ public class AudioPlayerPlugin implements MethodCallHandler {
             }
             case "setUrl": {
                 final String url = call.argument("url");
-                player.setUrl(url);
+                String headers = call.argument("headers");
+                player.setUrl(url, headers);
                 break;
             }
             case "updateNotification": {

@@ -13,6 +13,7 @@ import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -22,6 +23,13 @@ import androidx.core.app.NotificationCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.RemoteViews;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 public class MediaPlayerService extends Service implements Runnable {
     @SuppressWarnings("ConstantConditions")
@@ -38,6 +46,7 @@ public class MediaPlayerService extends Service implements Runnable {
     public static final int ACTION_TYPE_BUFFER = 4;
     public static final String PLAYER_FUNCTION_TYPE = "playerFunctionType";
     public static final String PLAYER_TRACK_URL = "trackURL";
+    public static final String PLAYER_HEADERS = "headers";
     public static final String PLAYER_VOLUME = "volume";
     public static final String PLAYER_POSITION = "position";
     public static final int PLAY_MEDIA_PLAYER = 1;
@@ -74,6 +83,7 @@ public class MediaPlayerService extends Service implements Runnable {
     private AudioManager audioManager;
     private Handler handler = new Handler();
     private String url;
+    private Map<String, String> headers;
     private int position;
     private float volume = -1;
     private boolean prepared = false;
@@ -275,7 +285,7 @@ public class MediaPlayerService extends Service implements Runnable {
                 int function = intent.getIntExtra(PLAYER_FUNCTION_TYPE, 0);
                 switch (function) {
                     case CHANGE_PLAYER_TRACK:
-                        changeTrack(intent.getStringExtra(PLAYER_TRACK_URL));
+                        changeTrack(intent.getStringExtra(PLAYER_TRACK_URL), intent.getStringExtra(PLAYER_HEADERS));
                         break;
                     case STOP_MEDIA_PLAYER:
                         stopPlayer();
@@ -283,7 +293,7 @@ public class MediaPlayerService extends Service implements Runnable {
                     case PLAY_MEDIA_PLAYER:
                         setVolume(intent.getFloatExtra(PLAYER_VOLUME, -1));
                         seekTo(intent.getIntExtra(PLAYER_POSITION, -1));
-                        startMediaPlayer(intent.getStringExtra(PLAYER_TRACK_URL));
+                        startMediaPlayer(intent.getStringExtra(PLAYER_TRACK_URL), intent.getStringExtra(PLAYER_HEADERS));
                         break;
                     case PAUSE_MEDIA_PLAYER:
                         pausePlayer();
@@ -322,7 +332,7 @@ public class MediaPlayerService extends Service implements Runnable {
 
     private void togglePlayer() {
         if (player == null) {
-            startMediaPlayer(null);
+            startMediaPlayer(null, null);
             return;
         }
         if (player.isPlaying()) {
@@ -376,12 +386,12 @@ public class MediaPlayerService extends Service implements Runnable {
         startPositionUpdate();
     }
 
-    private void changeTrack(String url) {
+    private void changeTrack(String url, String headers) {
         if (enableLogging) {
             Log.i(LOGGING_LABEL, "change url to " + url);
         }
         _stopPlayer();
-        startMediaPlayer(url);
+        startMediaPlayer(url, headers);
 
     }
 
@@ -437,9 +447,10 @@ public class MediaPlayerService extends Service implements Runnable {
         }
     }
 
-    public void startMediaPlayer(String url) {
+    public void startMediaPlayer(String url, String headers) {
         if (!TextUtils.isEmpty(url)) {
             this.url = url;
+            this.headers = parseHeaders(headers);
         }
         if (this.url == null) {
             return;
@@ -465,7 +476,7 @@ public class MediaPlayerService extends Service implements Runnable {
             }
         }
         try {
-            player.setDataSource(this.url);
+            player.setDataSource(this, Uri.parse(this.url), this.headers);
             prepared = false;
             player.setOnErrorListener((mp, what, extra) -> {
                 if (extra == MediaPlayer.MEDIA_ERROR_SERVER_DIED
@@ -584,8 +595,30 @@ public class MediaPlayerService extends Service implements Runnable {
         try {
             return Class.forName(className);
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            Log.e(LOGGING_LABEL, "failed to get MainActivity", e);
             return null;
         }
+    }
+
+    private static Map<String, String> parseHeaders(String raw) {
+        Map<String, String> result = new HashMap<>();
+        if(TextUtils.isEmpty(raw)) {
+            return result;
+        }
+        try {
+            JSONObject json = new JSONObject(raw);
+            Iterator<String> keys = json.keys();
+            while(keys.hasNext()) {
+                String key = keys.next();
+                String value = json.getString(key);
+                if(TextUtils.isEmpty(value)) {
+                    continue;
+                }
+                result.put(key, value);
+            }
+        } catch (JSONException e) {
+            Log.e(LOGGING_LABEL, "failed to parse headers", e);
+        }
+        return result;
     }
 }

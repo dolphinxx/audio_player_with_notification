@@ -25,6 +25,11 @@ const songs = [
     "name": "2048章",
     "album": "仙逆",
     "url": "http://audio.xmcdn.com/group10/M06/55/42/wKgDaVci_qzSZ7VEAFmBiJoJ1sA169.m4a",
+  }, {
+    "name": "第一集",
+    "album": "农门丑妇",
+    "url": "http://180j.ysts8.com:8000/%E7%8E%84%E5%B9%BB%E5%B0%8F%E8%AF%B4/%E5%86%9C%E9%97%A8%E4%B8%91%E5%A6%87/001.mp3?10103822300042x1552136997x10103828430702-8b36ee21c1ede456e2e84dd0d55fad99?3",
+    "headers": "{\"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36\"}",
   }
 ];
 
@@ -199,14 +204,14 @@ class _ExampleAppState extends State<ExampleApp> {
 
   void _play(dynamic song) async {
     String url = song['cache'] == true ? await _loadFile(song['url']) : song['url'];
-    player.play(url);
+    player.play(url, headers: song['headers']);
     player.updateNotification(title: song['name'], subtitle: song['album']);
     _reset();
   }
 
   void _setUrl(dynamic song) async {
     String url = song['cache'] == true ? await _loadFile(song['url']) : song['url'];
-    player.setUrl(url);
+    player.setUrl(url, headers: song['headers']);
     player.updateNotification(title: song['name'], subtitle: song['album']);
     _reset();
   }

@@ -71,9 +71,9 @@ class AudioPlayer {
 
   /// Play audio. Url can be a remote url (isLocal = false) or a local file system path (isLocal = true).
   Future<int> play(String url,
-      {bool isLocal: false, double volume: -1, int position: 0}) async {
+      {bool isLocal: false, double volume: -1, int position: 0, String headers}) async {
     int result = await _invokeMethod(
-        'play', {'url': url, 'isLocal': isLocal, 'volume': volume, 'position': position});
+        'play', {'url': url, 'isLocal': isLocal, 'volume': volume, 'position': position, 'headers': headers});
     return result;
   }
 
@@ -118,8 +118,8 @@ class AudioPlayer {
   /// Changes the url (source), without resuming playback (like play would do).
   ///
   /// This will keep the resource prepared (on Android) for when resume is called.
-  Future<int> setUrl(String url, {bool isLocal: false}) {
-    return _invokeMethod('setUrl', {'url': url, 'isLocal': isLocal});
+  Future<int> setUrl(String url, {bool isLocal: false, String headers}) {
+    return _invokeMethod('setUrl', {'url': url, 'isLocal': isLocal, 'headers': headers});
   }
 
   static void _log(String param) {

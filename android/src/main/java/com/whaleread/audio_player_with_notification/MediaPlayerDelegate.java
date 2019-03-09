@@ -62,12 +62,12 @@ public class MediaPlayerDelegate {
         this.listener = listener;
     }
 
-    public void play(@Nullable String url, float volume, int position) {
+    public void play(@Nullable String url, float volume, int position, @Nullable String headers) {
         if(!initialized) {
             createPlayer(null, null, null);
         }
         if (currentPlayerStatus != MediaPlayerService.PLAYER_STATUS_PLAYING && currentPlayerStatus != MediaPlayerService.PLAYER_STATUS_PAUSED) {
-            startMediaPlayer(url, volume, position);
+            startMediaPlayer(url, volume, position, headers);
             return;
         }
         if (currentPlayerStatus == MediaPlayerService.PLAYER_STATUS_PLAYING) {
@@ -120,11 +120,12 @@ public class MediaPlayerDelegate {
         context.sendBroadcast(intent);
     }
 
-    public void setUrl(String url) {
+    public void setUrl(String url, String headers) {
         Intent intent = new Intent();
         intent.setAction(MediaPlayerService.BROADCAST_TO_SERVICE);
         intent.putExtra(MediaPlayerService.PLAYER_FUNCTION_TYPE, MediaPlayerService.CHANGE_PLAYER_TRACK);
         intent.putExtra(MediaPlayerService.PLAYER_TRACK_URL, url);
+        intent.putExtra(MediaPlayerService.PLAYER_HEADERS, headers);
         context.sendBroadcast(intent);
     }
 
@@ -175,13 +176,14 @@ public class MediaPlayerDelegate {
         return this.currentPlayerStatus;
     }
 
-    public void startMediaPlayer(String url, float volume, int position) {
+    public void startMediaPlayer(String url, float volume, int position, String headers) {
         Intent intent = new Intent();
         intent.setAction(MediaPlayerService.BROADCAST_TO_SERVICE);
         intent.putExtra(MediaPlayerService.PLAYER_FUNCTION_TYPE, MediaPlayerService.PLAY_MEDIA_PLAYER);
         intent.putExtra(MediaPlayerService.PLAYER_TRACK_URL, url);
         intent.putExtra(MediaPlayerService.PLAYER_VOLUME, volume);
         intent.putExtra(MediaPlayerService.PLAYER_POSITION, position);
+        intent.putExtra(MediaPlayerService.PLAYER_HEADERS, headers);
         context.sendBroadcast(intent);
     }
 
