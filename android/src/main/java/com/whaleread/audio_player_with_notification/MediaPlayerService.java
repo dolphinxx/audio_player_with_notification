@@ -633,7 +633,9 @@ public class MediaPlayerService extends Service implements Runnable {
                     sendPlayerDuration();
                     break;
                 case Player.STATE_BUFFERING:
-                    Log.i(LOGGING_LABEL, "player buffering, bufferedPosition: " + player.getBufferedPosition() + ", contentBufferedPosition: " + player.getContentBufferedPosition() + ", totalBufferedDuration:" + player.getTotalBufferedDuration());
+                    if(enableLogging) {
+                        Log.i(LOGGING_LABEL, "player state buffering");
+                    }
                     break;
             }
         }
