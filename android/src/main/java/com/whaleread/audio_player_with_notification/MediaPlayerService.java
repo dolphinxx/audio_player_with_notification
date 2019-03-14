@@ -29,7 +29,9 @@ import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -464,9 +466,19 @@ public class MediaPlayerService extends Service implements Runnable {
             position = C.POSITION_UNSET;
         }
         String userAgent = this.headers != null && this.headers.containsKey("User-Agent") ? this.headers.get("User-Agent") : DEFAULT_USER_AGENT;
-        ExtractorMediaSource mediaSource = new ExtractorMediaSource.Factory(new DefaultDataSourceFactory(this, userAgent))
+        Uri uri = Uri.parse(this.url);
+        DataSource.Factory dataSourceFactory;
+        if("http".equals(uri.getScheme()) || "https".equals(uri.getScheme())) {
+            dataSourceFactory = new DefaultHttpDataSourceFactory(userAgent);
+            if(headers != null) {
+                ((DefaultHttpDataSourceFactory)dataSourceFactory).getDefaultRequestProperties().set(headers);
+            }
+        } else {
+            dataSourceFactory = new DefaultDataSourceFactory(this, userAgent);
+        }
+        ExtractorMediaSource mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory)
                 .setExtractorsFactory(new DefaultExtractorsFactory())
-                .createMediaSource(Uri.parse(this.url));
+                .createMediaSource(uri);
         player.prepare(mediaSource, resetPosition, false);
         startPositionUpdate();
     }
