@@ -119,7 +119,7 @@ public class MediaPlayerService extends Service implements Runnable {
         Intent contentIntent = new Intent(this, getMainActivityClass(this));
         PendingIntent pendingContentIntent = PendingIntent.getActivity(this, 2, contentIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        String channelId = "com.whaleread/audio_player_with_notification";
+        String channelId = "com.whaleread/audio_player_with_notification" + System.currentTimeMillis();
         notificationCompatBuilder =
                 new NotificationCompat.Builder(this.getApplicationContext(), channelId);
 
