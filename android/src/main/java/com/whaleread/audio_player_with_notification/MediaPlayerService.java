@@ -12,17 +12,24 @@ import android.graphics.Color;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.PowerManager;
-import androidx.annotation.Nullable;
-import androidx.core.app.NotificationCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.RemoteViews;
+
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.DefaultRenderersFactory;
+import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -30,6 +37,9 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
+import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
 
 public class MediaPlayerService extends Service implements Runnable {
     @SuppressWarnings("ConstantConditions")
@@ -61,6 +71,7 @@ public class MediaPlayerService extends Service implements Runnable {
     public static final int UPDATE_NOTIFICATION_THEME = 10;
     public static final int UPDATE_OPTIONS = 11;
     public static final String PLAYER_STATUS_KEY = "playerCurrentStatus";
+    public static final String PLAYER_STATUS_MESSAGE_KEY = "playerStatusMessage";
     public static final String PLAYER_DURATION_KEY = "playerDuration";
     public static final String PLAYER_POSITION_KEY = "playerCurrentPosition";
     public static final String PLAYER_BUFFER_KEY = "playerCurrentBuffer";
@@ -79,19 +90,22 @@ public class MediaPlayerService extends Service implements Runnable {
 
     private static final String LOGGING_LABEL = "AudioPlayer";
 
-    private volatile MediaPlayer player;
+    private static final String DEFAULT_USER_AGENT = "ExoPlayer/2.9.6 (Android " + Build.VERSION.RELEASE + ") Mobile";
+
+    private SimpleExoPlayer player;
+//    private volatile MediaPlayer player;
     private AudioManager audioManager;
     private Handler handler = new Handler();
     private String url;
     private Map<String, String> headers;
-    private int position;
-    private float volume = -1;
-    private boolean prepared = false;
+    private long position = C.POSITION_UNSET;
+//    private float volume = -1;
     private long positionNotifyInterval = 200;
     private int status = PLAYER_STATUS_INITIAL;
     private boolean autoResume = false;
     private boolean audioFocus = true;
     private boolean enableLogging = false;
+    private boolean durationSent = false;
     private AudioManager.OnAudioFocusChangeListener onAudioFocusChangeListener;
 
     private int notificationId = 1;
@@ -261,8 +275,8 @@ public class MediaPlayerService extends Service implements Runnable {
                 }
             }
         }
-        if (player != null && player.isPlaying()) {
-            sendPlayerStatus(PLAYER_STATUS_PLAYING);
+        if (player != null && player.getPlayWhenReady()) {
+            sendPlayerStatus(PLAYER_STATUS_PLAYING, null);
         }
         createNotification();
         startForeground(notificationId, notificationCompatBuilder.build());
@@ -273,13 +287,7 @@ public class MediaPlayerService extends Service implements Runnable {
     public void onDestroy() {
         super.onDestroy();
         unregisterReceiver(playerReceiver);
-        if (player != null) {
-            if(player.isPlaying()) {
-                player.stop();
-            }
-            player.release();
-            player = null;
-        }
+        releasePlayer();
     }
 
     private BroadcastReceiver playerReceiver = new BroadcastReceiver() {
@@ -336,11 +344,12 @@ public class MediaPlayerService extends Service implements Runnable {
     };
 
     private void togglePlayer() {
-        if (player == null) {
+        Log.i(LOGGING_LABEL, "toggle player position:" + position + " player null: " + (player == null) + " " + (player != null && player.getPlayWhenReady()));
+        if (player == null && position == C.POSITION_UNSET) {
             startMediaPlayer(null, null);
             return;
         }
-        if (player.isPlaying()) {
+        if (player != null && player.getPlayWhenReady()) {
             pausePlayer();
         } else {
             resumePlayer();
@@ -349,38 +358,36 @@ public class MediaPlayerService extends Service implements Runnable {
     }
 
     private void pausePlayer() {
-        if (player != null && player.isPlaying()) {
-            player.pause();
-            sendPlayerStatus(PLAYER_STATUS_PAUSED);
-            stopPositionUpdate();
-        }
+        releasePlayer();
+        sendPlayerStatus(PLAYER_STATUS_PAUSED, null);
+        Log.i(LOGGING_LABEL, "player is null after pause? " + (player == null));
     }
 
     private void resumePlayer() {
         autoResume = false;
-        if (player != null && !player.isPlaying()) {
-            if (audioFocus) {
-                int result;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    result = audioManager.requestAudioFocus(new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                            .setAudioAttributes(audioAttributes)
-                            .setAcceptsDelayedFocusGain(false)
-                            .setWillPauseWhenDucked(true)
-                            .setOnAudioFocusChangeListener(onAudioFocusChangeListener)
-                            .build());
-                } else {
-                    result = audioManager.requestAudioFocus(onAudioFocusChangeListener,
-                            // Use the music stream.
-                            AudioManager.STREAM_MUSIC,
-                            // Request permanent focus.
-                            AudioManager.AUDIOFOCUS_GAIN);
-                }
-                if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-                    doResumePlayer();
-                }
+        if (audioFocus) {
+            int result;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                result = audioManager.requestAudioFocus(new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                        .setAudioAttributes(audioAttributes)
+                        .setAcceptsDelayedFocusGain(false)
+                        .setWillPauseWhenDucked(true)
+                        .setOnAudioFocusChangeListener(onAudioFocusChangeListener)
+                        .build());
             } else {
-                doResumePlayer();
+                result = audioManager.requestAudioFocus(onAudioFocusChangeListener,
+                        // Use the music stream.
+                        AudioManager.STREAM_MUSIC,
+                        // Request permanent focus.
+                        AudioManager.AUDIOFOCUS_GAIN);
             }
+            if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                doResumePlayer();
+            } else {
+                Log.w(LOGGING_LABEL, "requestAudioFocus failed " + result);
+            }
+        } else {
+            doResumePlayer();
         }
     }
 
@@ -388,9 +395,8 @@ public class MediaPlayerService extends Service implements Runnable {
         if (enableLogging) {
             Log.i(LOGGING_LABEL, "resume player");
         }
-        player.start();
-        sendPlayerStatus(PLAYER_STATUS_PLAYING);
-        startPositionUpdate();
+        initializePlayer();
+        sendPlayerStatus(PLAYER_STATUS_PLAYING, null);
     }
 
     private void changeTrack(String url, String headers) {
@@ -399,7 +405,6 @@ public class MediaPlayerService extends Service implements Runnable {
         }
         _stopPlayer();
         startMediaPlayer(url, headers);
-
     }
 
     private void stopPlayer() {
@@ -408,18 +413,13 @@ public class MediaPlayerService extends Service implements Runnable {
                 Log.i(LOGGING_LABEL, "stop player");
             }
             _stopPlayer();
-            sendPlayerStatus(PLAYER_STATUS_STOPPED);
+            sendPlayerStatus(PLAYER_STATUS_STOPPED, null);
         }
     }
 
     private void _stopPlayer() {
-        if (player != null) {
-            player.stop();
-            player.release();
-            player = null;
-            stopPositionUpdate();
-        }
-        prepared = false;
+        releasePlayer();
+        position = C.POSITION_UNSET;
     }
 
     private void setVolume(float volume) {
@@ -430,14 +430,9 @@ public class MediaPlayerService extends Service implements Runnable {
             Log.i(LOGGING_LABEL, "set volume to " + volume);
         }
         volume = Math.max(0, Math.min(1, volume));
-        if (player != null) {
-//                player.setVolume(volume, volume);
-            try {
-                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (int) (volume * audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)), 0);
-            } catch (Exception ignore) {
-            }
-        } else {
-            this.volume = volume;
+        try {
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (int) (volume * audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)), 0);
+        } catch (Exception ignore) {
         }
     }
 
@@ -446,16 +441,58 @@ public class MediaPlayerService extends Service implements Runnable {
             if (enableLogging) {
                 Log.i(LOGGING_LABEL, "seek to " + position);
             }
-            if (player != null && prepared) {
+            if (player != null) {
                 player.seekTo(position);
+                this.position = C.POSITION_UNSET;
             } else {
                 this.position = position;
             }
         }
     }
 
+    private void initializePlayer() {
+        if (player == null) {
+            player = ExoPlayerFactory.newSimpleInstance(this, new DefaultRenderersFactory(this), new DefaultTrackSelector());
+            player.addListener(new PlayerEventListener());
+            player.setPlayWhenReady(startAutoPlay);
+        }
+        boolean resetPosition = position == C.POSITION_UNSET;
+        if (position != C.POSITION_UNSET) {
+            player.seekTo(position);
+            position = C.POSITION_UNSET;
+        }
+        String userAgent = this.headers != null && this.headers.containsKey("User-Agent") ? this.headers.get("User-Agent") : DEFAULT_USER_AGENT;
+        ExtractorMediaSource mediaSource = new ExtractorMediaSource.Factory(new DefaultDataSourceFactory(this, userAgent))
+                .setExtractorsFactory(new DefaultExtractorsFactory())
+                .createMediaSource(Uri.parse(this.url));
+        player.prepare(mediaSource, resetPosition, false);
+        startPositionUpdate();
+    }
+
+    private void releasePlayer() {
+        if(player != null) {
+            updateStartPosition();
+            stopPositionUpdate();
+            player.setPlayWhenReady(false);
+            player.stop();
+            player.release();
+            player = null;
+        }
+    }
+
+    private boolean startAutoPlay = true;
+
+    private void updateStartPosition() {
+        if (player != null) {
+            startAutoPlay = player.getPlayWhenReady();
+            position = Math.max(0, player.getContentPosition());
+        }
+    }
+
     public void startMediaPlayer(String url, String headers) {
+        durationSent = false;
         autoResume = false;
+        startAutoPlay = true;
         if (!TextUtils.isEmpty(url)) {
             this.url = url;
             this.headers = parseHeaders(headers);
@@ -466,96 +503,16 @@ public class MediaPlayerService extends Service implements Runnable {
         if (enableLogging) {
             Log.i(LOGGING_LABEL, "start media player with url " + this.url);
         }
-        if (player == null) {
-            player = new MediaPlayer();
-            player.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                player.setAudioAttributes(audioAttributes);
-            } else {
-                player.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            }
-            if (volume != -1) {
-//                player.setVolume(volume, volume);
-                try {
-                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (int) (volume * audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)), 0);
-                } catch (Exception ignore) {
-                }
-                volume = -1;
-            }
-        }
+
         try {
-            player.setDataSource(this, Uri.parse(this.url), this.headers);
-            prepared = false;
-            player.setOnErrorListener((mp, what, extra) -> {
-                if (extra == MediaPlayer.MEDIA_ERROR_SERVER_DIED
-                        || extra == MediaPlayer.MEDIA_ERROR_MALFORMED) {
-                    sendPlayerStatus(PLAYER_STATUS_ERROR);
-                } else if (extra == MediaPlayer.MEDIA_ERROR_IO) {
-                    sendPlayerStatus(PLAYER_STATUS_ERROR);
-                }
-                _stopPlayer();
-                return false;
-            });
-            player.setOnBufferingUpdateListener((mp, percent) -> {
-                Intent intent = new Intent();
-                intent.setAction(SERVICE_TO_BROADCAST);
-                intent.putExtra(ACTION_TYPE_KEY, ACTION_TYPE_BUFFER);
-                intent.putExtra(PLAYER_BUFFER_KEY, percent);
-                sendBroadcast(intent);
-            });
-            player.prepareAsync();
-            player.setOnPreparedListener(mp -> {
-                if (audioFocus) {
-                    int result;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        result = audioManager.requestAudioFocus(new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                                .setAudioAttributes(audioAttributes)
-                                .setAcceptsDelayedFocusGain(false)
-                                .setWillPauseWhenDucked(true)
-                                .setOnAudioFocusChangeListener(onAudioFocusChangeListener)
-                                .build());
-                    } else {
-                        result = audioManager.requestAudioFocus(onAudioFocusChangeListener,
-                                AudioManager.STREAM_MUSIC,
-                                AudioManager.AUDIOFOCUS_GAIN);
-                    }
-                    if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-                        player.start();
-                        sendPlayerDuration(player.getDuration());
-                        startPositionUpdate();
-                        if (position != -1) {
-                            player.seekTo(position);
-                            position = -1;
-                        }
-                    }
-                } else {
-                    player.start();
-                    sendPlayerDuration(player.getDuration());
-                    startPositionUpdate();
-                    if (position != -1) {
-                        player.seekTo(position);
-                        position = -1;
-                    }
-                }
-                prepared = true;
-            });
-            player.setOnCompletionListener(mp -> {
-                sendPlayerStatus(PLAYER_STATUS_COMPLETED);
-                _stopPlayer();
-            });
-//            player.setOnInfoListener(new MediaPlayer.OnInfoListener() {
-//                @Override
-//                public boolean onInfo(MediaPlayer mp, int what, int extra) {
-//                    return false;
-//                }
-//            });
-            sendPlayerStatus(PLAYER_STATUS_PLAYING);
+            initializePlayer();
+            sendPlayerStatus(PLAYER_STATUS_PLAYING, null);
         } catch (Exception e) {
             Log.e("MediaPlayerService", "failed to start mediaPlayer", e);
         }
     }
 
-    private void sendPlayerStatus(int status) {
+    private void sendPlayerStatus(int status, String message) {
         this.status = status;
         remoteView.setImageViewResource(R.id.play_btn, status == PLAYER_STATUS_PLAYING ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
         notificationManager.notify(notificationId, notificationCompatBuilder.build());
@@ -563,15 +520,20 @@ public class MediaPlayerService extends Service implements Runnable {
         intent.setAction(SERVICE_TO_BROADCAST);
         intent.putExtra(ACTION_TYPE_KEY, ACTION_TYPE_STATUS);
         intent.putExtra(PLAYER_STATUS_KEY, status);
+        intent.putExtra(PLAYER_STATUS_MESSAGE_KEY, message);
         sendBroadcast(intent);
     }
 
-    private void sendPlayerDuration(int duration) {
+    private void sendPlayerDuration() {
+        if(durationSent || player == null) {
+            return;
+        }
         Intent intent = new Intent();
         intent.setAction(SERVICE_TO_BROADCAST);
         intent.putExtra(ACTION_TYPE_KEY, ACTION_TYPE_DURATION);
-        intent.putExtra(PLAYER_DURATION_KEY, duration);
+        intent.putExtra(PLAYER_DURATION_KEY, player.getDuration());
         sendBroadcast(intent);
+        durationSent = true;
     }
 
     private void startPositionUpdate() {
@@ -584,7 +546,7 @@ public class MediaPlayerService extends Service implements Runnable {
 
     @Override
     public void run() {
-        if (player != null && player.isPlaying()) {
+        if (player != null && player.getPlayWhenReady()) {
             Intent intent = new Intent();
             intent.setAction(SERVICE_TO_BROADCAST);
             intent.putExtra(ACTION_TYPE_KEY, ACTION_TYPE_POSITION);
@@ -599,6 +561,7 @@ public class MediaPlayerService extends Service implements Runnable {
     private static Class getMainActivityClass(Context context) {
         String packageName = context.getPackageName();
         Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(packageName);
+        //noinspection ConstantConditions
         String className = launchIntent.getComponent().getClassName();
         try {
             return Class.forName(className);
@@ -628,5 +591,45 @@ public class MediaPlayerService extends Service implements Runnable {
             Log.e(LOGGING_LABEL, "failed to parse headers", e);
         }
         return result;
+    }
+
+    private class PlayerEventListener implements Player.EventListener {
+        @Override
+        public void onPlayerError(ExoPlaybackException error) {
+            Log.e(LOGGING_LABEL, "error occurred while playing", error);
+            _stopPlayer();
+            sendPlayerStatus(PLAYER_STATUS_ERROR, error.getMessage());
+        }
+
+        @Override
+        public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+            switch(playbackState) {
+                case Player.STATE_IDLE:
+                    if(enableLogging) {
+                        Log.i(LOGGING_LABEL, "player state idle");
+                    }
+                    break;
+                case Player.STATE_ENDED:
+                    if(enableLogging) {
+                        Log.i(LOGGING_LABEL, "player state end");
+                    }
+                    sendPlayerStatus(PLAYER_STATUS_COMPLETED, null);
+                    _stopPlayer();
+                    break;
+                case Player.STATE_READY:
+                    if(enableLogging) {
+                        Log.i(LOGGING_LABEL, "player state ready");
+                    }
+                    sendPlayerDuration();
+                    break;
+                case Player.STATE_BUFFERING:
+                    Intent intent = new Intent();
+                    intent.setAction(SERVICE_TO_BROADCAST);
+                    intent.putExtra(ACTION_TYPE_KEY, ACTION_TYPE_BUFFER);
+                    intent.putExtra(PLAYER_BUFFER_KEY, player.getBufferedPercentage());
+                    sendBroadcast(intent);
+                    break;
+            }
+        }
     }
 }

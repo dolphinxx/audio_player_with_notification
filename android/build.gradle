@@ -1,6 +1,8 @@
 group 'com.whaleread.audio_player_with_notification'
 version '1.0-SNAPSHOT'
-
+ext {
+    exoPlayerVersion = '2.9.6'
+}
 buildscript {
     repositories {
         google()
@@ -39,7 +41,12 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.0.0-beta01'
+    implementation 'com.google.android.exoplayer:exoplayer-core:' + project.ext.exoPlayerVersion
+//    implementation 'com.google.android.exoplayer:exoplayer-dash:' + project.ext.exoPlayerVersion
+//    implementation 'com.google.android.exoplayer:exoplayer-ui:' + project.ext.exoPlayerVersion
+//    implementation 'com.google.android.exoplayer:exoplayer-hls:' + project.ext.exoPlayerVersion
+//    implementation 'com.google.android.exoplayer:exoplayer-smoothstreaming:' + project.ext.exoPlayerVersion
+    implementation 'androidx.appcompat:appcompat:1.1.0-alpha03'
 }
 
 allprojects {

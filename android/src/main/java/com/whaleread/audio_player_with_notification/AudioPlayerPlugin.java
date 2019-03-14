@@ -49,17 +49,17 @@ public class AudioPlayerPlugin implements MethodCallHandler {
             }
 
             @Override
-            public void onError() {
-                channel.invokeMethod("onError", null);
+            public void onError(String message) {
+                channel.invokeMethod("onError", message);
             }
 
             @Override
-            public void onDuration(int duration) {
+            public void onDuration(long duration) {
                 channel.invokeMethod("onDuration", duration);
             }
 
             @Override
-            public void onPosition(int position) {
+            public void onPosition(long position) {
                 channel.invokeMethod("onPosition", position);
             }
 

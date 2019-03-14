@@ -211,19 +211,19 @@ public class MediaPlayerDelegate {
         }
     }
 
-    private void onServiceError() {
+    private void onServiceError(String message) {
         if (listener != null) {
-            listener.onError();
+            listener.onError(message);
         }
     }
 
-    private void onServiceDuration(int duration) {
+    private void onServiceDuration(long duration) {
         if (listener != null) {
             listener.onDuration(duration);
         }
     }
 
-    private void onServicePosition(int position) {
+    private void onServicePosition(long position) {
         if (listener != null) {
             listener.onPosition(position);
         }
@@ -257,13 +257,13 @@ public class MediaPlayerDelegate {
                             onServiceComplete();
                             break;
                         case MediaPlayerService.PLAYER_STATUS_ERROR:
-                            onServiceError();
+                            onServiceError(intent.getStringExtra(MediaPlayerService.PLAYER_STATUS_MESSAGE_KEY));
                             break;
                     }
                 } else if (actionType == MediaPlayerService.ACTION_TYPE_DURATION) {
-                    onServiceDuration(intent.getIntExtra(MediaPlayerService.PLAYER_DURATION_KEY, 0));
+                    onServiceDuration(intent.getLongExtra(MediaPlayerService.PLAYER_DURATION_KEY, 0));
                 } else if (actionType == MediaPlayerService.ACTION_TYPE_POSITION) {
-                    onServicePosition(intent.getIntExtra(MediaPlayerService.PLAYER_POSITION_KEY, 0));
+                    onServicePosition(intent.getLongExtra(MediaPlayerService.PLAYER_POSITION_KEY, 0));
                 } else if (actionType == MediaPlayerService.ACTION_TYPE_BUFFER) {
                     onServiceBuffer(intent.getIntExtra(MediaPlayerService.PLAYER_BUFFER_KEY, 0));
                 }

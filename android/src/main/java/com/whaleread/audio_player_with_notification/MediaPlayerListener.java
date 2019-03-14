@@ -9,11 +9,11 @@ public interface MediaPlayerListener {
 
     void onComplete();
 
-    void onError();
+    void onError(String message);
 
-    void onDuration(int duration);
+    void onDuration(long duration);
 
-    void onPosition(int position);
+    void onPosition(long position);
 
     void onBuffer(int percent);
 }
