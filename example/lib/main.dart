@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
+import 'dart:math';
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart' as crypto;
 
@@ -13,7 +14,7 @@ import 'player_slider.dart';
 
 const songs = [
   {
-    "name": "一生所爱",
+    "name": "一生所爱 - cached",
     "album": "电影《大话西游》插曲",
     "url": "http://222.216.30.118:8088/201411542.mp3",
     "cache": true,
@@ -27,9 +28,9 @@ const songs = [
     "url": "http://audio.xmcdn.com/group10/M06/55/42/wKgDaVci_qzSZ7VEAFmBiJoJ1sA169.m4a",
   }, {
     "name": "第一集",
-    "album": "农门丑妇",
-    "url": "http://180j.ysts8.com:8000/%E7%8E%84%E5%B9%BB%E5%B0%8F%E8%AF%B4/%E5%86%9C%E9%97%A8%E4%B8%91%E5%A6%87/001.mp3?10103822300042x1552136997x10103828430702-8b36ee21c1ede456e2e84dd0d55fad99?3",
-    "headers": "{\"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36\"}",
+    "album": "凡人修仙传之仙界篇",
+    "url": "http://180k.ysts8.com:8000/%E7%8E%84%E5%B9%BB%E5%B0%8F%E8%AF%B4/%E5%87%A1%E4%BA%BA%E4%BF%AE%E4%BB%99%E4%BC%A0%E4%B9%8B%E4%BB%99%E7%95%8C%E7%AF%87/001.mp3?10103822300909x1552137864x10103828431569-d729ad9ec4e749585f080ca8bc11da4d?1",
+//    "headers": "{\"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36\"}",
   }
 ];
 
@@ -55,6 +56,7 @@ class _ExampleAppState extends State<ExampleApp> {
   void initState() {
     super.initState();
     player = new AudioPlayer();
+    AudioPlayer.logEnabled = true;
     player.init();
     player.durationHandler = (d) => setState(() {duration = d;});
     player.positionHandler = (p) => setState(() {
@@ -144,7 +146,7 @@ class _ExampleAppState extends State<ExampleApp> {
             value: (position??0).toDouble(),
             onChanged: (value) => player.seek(value.toInt()),
             min: 0,
-            max: (duration??0).toDouble(),
+            max: (max(duration??0, position??0)).toDouble(),
           ),
         ),
         new Text(
