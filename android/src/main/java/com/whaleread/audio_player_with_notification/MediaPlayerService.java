@@ -99,6 +99,7 @@ public class MediaPlayerService extends Service implements Runnable {
     private String url;
     private Map<String, String> headers;
     private long position = C.POSITION_UNSET;
+    private int bufferedPercent = 0;
 //    private float volume = -1;
     private long positionNotifyInterval = 200;
     private int status = PLAYER_STATUS_INITIAL;
@@ -451,6 +452,7 @@ public class MediaPlayerService extends Service implements Runnable {
     }
 
     private void initializePlayer() {
+        bufferedPercent = 0;
         if (player == null) {
             player = ExoPlayerFactory.newSimpleInstance(this, new DefaultRenderersFactory(this), new DefaultTrackSelector());
             player.addListener(new PlayerEventListener());
@@ -552,6 +554,14 @@ public class MediaPlayerService extends Service implements Runnable {
             intent.putExtra(ACTION_TYPE_KEY, ACTION_TYPE_POSITION);
             intent.putExtra(PLAYER_POSITION_KEY, player.getCurrentPosition());
             sendBroadcast(intent);
+            if(player.getBufferedPercentage() != bufferedPercent) {
+                bufferedPercent = player.getBufferedPercentage();
+                Intent bufferingIntent = new Intent();
+                bufferingIntent.setAction(SERVICE_TO_BROADCAST);
+                bufferingIntent.putExtra(ACTION_TYPE_KEY, ACTION_TYPE_BUFFER);
+                bufferingIntent.putExtra(PLAYER_BUFFER_KEY, bufferedPercent);
+                sendBroadcast(bufferingIntent);
+            }
             handler.postDelayed(this, positionNotifyInterval);
         } else {
             stopPositionUpdate();
@@ -623,11 +633,7 @@ public class MediaPlayerService extends Service implements Runnable {
                     sendPlayerDuration();
                     break;
                 case Player.STATE_BUFFERING:
-                    Intent intent = new Intent();
-                    intent.setAction(SERVICE_TO_BROADCAST);
-                    intent.putExtra(ACTION_TYPE_KEY, ACTION_TYPE_BUFFER);
-                    intent.putExtra(PLAYER_BUFFER_KEY, player.getBufferedPercentage());
-                    sendBroadcast(intent);
+                    Log.i(LOGGING_LABEL, "player buffering, bufferedPosition: " + player.getBufferedPosition() + ", contentBufferedPosition: " + player.getContentBufferedPosition() + ", totalBufferedDuration:" + player.getTotalBufferedDuration());
                     break;
             }
         }
