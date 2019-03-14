@@ -89,6 +89,7 @@ public class MediaPlayerService extends Service implements Runnable {
     private boolean prepared = false;
     private long positionNotifyInterval = 200;
     private int status = PLAYER_STATUS_INITIAL;
+    private boolean autoResume = false;
     private boolean audioFocus = true;
     private boolean enableLogging = false;
     private AudioManager.OnAudioFocusChangeListener onAudioFocusChangeListener;
@@ -205,8 +206,9 @@ public class MediaPlayerService extends Service implements Runnable {
                 onAudioFocusChangeListener = focusChange -> {
                     switch (focusChange) {
                         case AudioManager.AUDIOFOCUS_GAIN:
-                            if (status == PLAYER_STATUS_PAUSED) {
+                            if (status == PLAYER_STATUS_PAUSED && autoResume) {
                                 doResumePlayer();
+                                autoResume = false;
                             }
                             if (enableLogging) {
                                 Log.i(LOGGING_LABEL, "AUDIOFOCUS_GAIN");
@@ -228,6 +230,7 @@ public class MediaPlayerService extends Service implements Runnable {
                             }
                             if (status == PLAYER_STATUS_PLAYING) {
                                 pausePlayer();
+                                autoResume = true;
                             }
                             break;
                         case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
@@ -236,6 +239,7 @@ public class MediaPlayerService extends Service implements Runnable {
                             }
                             if (status == PLAYER_STATUS_PLAYING) {
                                 pausePlayer();
+                                autoResume = true;
                             }
                             break;
                         case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
@@ -244,6 +248,7 @@ public class MediaPlayerService extends Service implements Runnable {
                             }
                             if (status == PLAYER_STATUS_PLAYING) {
                                 pausePlayer();
+                                autoResume = true;
                             }
                             break;
                     }
@@ -340,6 +345,7 @@ public class MediaPlayerService extends Service implements Runnable {
         } else {
             resumePlayer();
         }
+        autoResume = false;
     }
 
     private void pausePlayer() {
@@ -351,6 +357,7 @@ public class MediaPlayerService extends Service implements Runnable {
     }
 
     private void resumePlayer() {
+        autoResume = false;
         if (player != null && !player.isPlaying()) {
             if (audioFocus) {
                 int result;
@@ -448,6 +455,7 @@ public class MediaPlayerService extends Service implements Runnable {
     }
 
     public void startMediaPlayer(String url, String headers) {
+        autoResume = false;
         if (!TextUtils.isEmpty(url)) {
             this.url = url;
             this.headers = parseHeaders(headers);
