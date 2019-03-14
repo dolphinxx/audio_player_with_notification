@@ -86,7 +86,8 @@ public class AudioPlayerPlugin implements MethodCallHandler {
                 Boolean audioFocus = call.argument("audioFocus");
                 Integer positionNotifyInterval = call.argument("positionNotifyInterval");
                 Boolean enableLogging = call.argument("enableLogging");
-                player.createPlayer(audioFocus, positionNotifyInterval, enableLogging);
+                String notificationName = call.argument("notificationName");
+                player.createPlayer(audioFocus, positionNotifyInterval, enableLogging, notificationName);
                 break;
             }
             case "dispose": {

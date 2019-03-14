@@ -23,7 +23,7 @@ public class MediaPlayerDelegate {
         this.context = context;
     }
 
-    public void createPlayer(Boolean audioFocus, Integer positionNotifyInterval, Boolean enableLogging) {
+    public void createPlayer(Boolean audioFocus, Integer positionNotifyInterval, Boolean enableLogging, String notificationName) {
         if(initialized) {
             return;
         }
@@ -37,6 +37,9 @@ public class MediaPlayerDelegate {
         if(enableLogging != null) {
             this.enableLogging = enableLogging;
             intent.putExtra(MediaPlayerService.ENABLE_LOGGING_KEY, enableLogging);
+        }
+        if(notificationName != null) {
+            intent.putExtra(MediaPlayerService.NOTIFICATION_NAME_KEY, notificationName);
         }
         if(this.enableLogging) {
             Log.i(LOGGING_LABEL, "createPlayer");
@@ -64,7 +67,7 @@ public class MediaPlayerDelegate {
 
     public void play(@Nullable String url, float volume, int position, @Nullable String headers) {
         if(!initialized) {
-            createPlayer(null, null, null);
+            createPlayer(null, null, null, null);
         }
         if (currentPlayerStatus != MediaPlayerService.PLAYER_STATUS_PLAYING && currentPlayerStatus != MediaPlayerService.PLAYER_STATUS_PAUSED) {
             startMediaPlayer(url, volume, position, headers);

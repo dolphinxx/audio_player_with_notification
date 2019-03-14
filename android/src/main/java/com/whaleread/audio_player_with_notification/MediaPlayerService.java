@@ -52,6 +52,7 @@ public class MediaPlayerService extends Service implements Runnable {
     public static final String AUDIO_FOCUS_KEY = "audioFocus";
     public static final String ENABLE_LOGGING_KEY = "enableLogging";
     public static final String ACTION_TYPE_KEY = "actionType";
+    public static final String NOTIFICATION_NAME_KEY = "notificationName";
     public static final int ACTION_TYPE_STATUS = 1;
     public static final int ACTION_TYPE_DURATION = 2;
     public static final int ACTION_TYPE_POSITION = 3;
@@ -103,6 +104,7 @@ public class MediaPlayerService extends Service implements Runnable {
     private long position = C.POSITION_UNSET;
     private int bufferedPercent = 0;
 //    private float volume = -1;
+    private String notificationName = "AudioPlayerService";
     private long positionNotifyInterval = 200;
     private int status = PLAYER_STATUS_INITIAL;
     private boolean autoResume = false;
@@ -162,7 +164,7 @@ public class MediaPlayerService extends Service implements Runnable {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(channelId,
-                    "MediaPlayerService",
+                    notificationName,
                     NotificationManager.IMPORTANCE_LOW);
             notificationManager.createNotificationChannel(channel);
             notificationCompatBuilder.setChannelId(channelId);
@@ -214,6 +216,9 @@ public class MediaPlayerService extends Service implements Runnable {
         }
         if (intent.hasExtra(ENABLE_LOGGING_KEY)) {
             this.enableLogging = intent.getBooleanExtra(ENABLE_LOGGING_KEY, false);
+        }
+        if(intent.hasExtra(NOTIFICATION_NAME_KEY)) {
+            this.notificationName = intent.getStringExtra(NOTIFICATION_NAME_KEY);
         }
         if (audioManager == null) {
             IntentFilter intentFilter = new IntentFilter(BROADCAST_TO_SERVICE);

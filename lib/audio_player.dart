@@ -61,8 +61,8 @@ class AudioPlayer {
         .then((result) => (result as int));
   }
 
-  Future<int> init({bool audioFocus, int positionNotifyInterval}) async {
-    return await _invokeMethod('init', {'audioFocus': audioFocus, 'positionNotifyInterval': positionNotifyInterval, 'enableLogging': logEnabled});
+  Future<int> init({bool audioFocus, int positionNotifyInterval, String notificationName}) async {
+    return await _invokeMethod('init', {'audioFocus': audioFocus, 'positionNotifyInterval': positionNotifyInterval, 'enableLogging': logEnabled, 'notificationName': notificationName});
   }
 
   Future<int> dispose() async {
